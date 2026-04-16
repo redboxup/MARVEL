@@ -1,7 +1,5 @@
 # MARVEL: Margin Adjusted Robust von Mises-Fischer Expert Learning for Long-Tailed Out-of-Distribution Detection
 
-## Overview
-
 MARVEL is a novel approach for out-of-distribution (OOD) detection in medical imaging that addresses critical gaps in existing methods. Designed with clinical deployment in mind, MARVEL combines a nonlinear von Mises-Fisher classifier with a multi-expert framework to reliably identify unfamiliar cases while handling imbalanced medical datasets. By explicitly training an outlier expert to distinguish inlier from outlier data, MARVEL achieves state-of-the-art OOD detection performance across multiple clinical benchmarks (RFMiD, ISIC2019, NCTCRC), enabling safer AI-assisted diagnosis through confident case deferral to clinicians.
 
 This repository contains the official implementation of MARVEL. It is designed to facilitate reproducibility of our results and enable adoption in medical imaging workflows.
@@ -14,7 +12,7 @@ This repository contains the official implementation of MARVEL. It is designed t
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
+git clone https://github.com/redboxup/MARVEL
 cd MARVEL
 ```
 
@@ -53,61 +51,77 @@ python preprocess.py \
 
 Once preprocessing is complete, your datasets are ready for training!
 
+### Creating Corruptions
+
+Corrupted (near-OOD) datasets used in the paper can be generated using `corr.py`.
+
+```bash
+python corr.py +dataset=<name>
+```
+**Available options:**
+* `dataset:` isic2019, rfmid, nctcrc
+This script applies a fixed set of corruptions (noise, blur, compression, etc.) to the test split using pre-generated augmentation replays, ensuring consistency across runs.
+
+Generated images are saved to:
+```bash
+data/preprocessed/nearood/<dataset>/corr/
+```
+
 ## Usage
 
 ### Training
 
 After preprocessing your datasets, you can train MARVEL using the configuration-based training pipeline.
+All arguments are passed as configuration overrides.
 
-**Basic training command:**
+**Basic command:**
 
 ```bash
-python run.py
+python run.py <configs>
 ```
 
-This will:
-1. Load the default configuration from `expconf.yaml`
-2. Create experiment directories for logs, results, and model weights
-3. Train the model on your dataset
-4. Perform two-stage training (initial training + stage two refinement)
-5. Evaluate on the test split
-6. Generate OOD detection metrics
-7. Create t-SNE visualizations
-
-**Output files:**
-
-The training pipeline generates the following outputs in the experiment directory:
-- `logs/`: Training logs and debugging information
-- `weights/`: Model checkpoints saved at each epoch
-- `results/all_results.csv`: Comprehensive evaluation metrics and OOD detection results
-- `results/`: t-SNE visualizations and additional analysis
-
-**Configuration:**
-
-Training behavior is controlled via `expconf.yaml`. Key parameters include:
-- Dataset name and paths
-- Model architecture and hyperparameters
-- Optimizer and scheduler settings
-- Training epochs and batch sizes
-- OOD evaluation datasets
-
-Modify `expconf.yaml` to customize training for your specific use case.
-
-**Example - Training on ISIC 2019:**
-
-Update `expconf.yaml` with:
-```yaml
-dataset:
-  name: isic2019
-  data_dir: /path/to/processed/isic2019
-trainer:
-  epochs: 100
-  batch_size: 32
-```
-
-Then run:
+Select predefined configurations:
 ```bash
-python run.py
+python run.py +dataset=<name> +trainer=<name> +scheduler=<name> +optimizer=<name>
 ```
+**Available options:**
+* `dataset`: isic2019, rfmid, nctcrc
+* `trainer`: crossentropy, ceoutlierexposure, marvel
+* `scheduler`: cosine, linear, none
+* `optimizer`: adam, sgd
 
-Once training completes, results and model weights will be saved to the experiment directory for evaluation and deployment.
+To reproduce the results reported in the paper, run the following commands.
+
+#### ISIC2019
+```bash
+python run.py \
+  +dataset=isic2019 \
+  +trainer=marvel \
+  +optimizer=adam \
+  +scheduler=cosine \
+  trainer.epochs=75 \
+  trainer.batch_size=64 \
+  trainer.learning_rate=1e-4 \
+```
+#### RFMiD
+```bash
+python run.py \
+  +dataset=rfmid \
+  +trainer=marvel \
+  +optimizer=adam \
+  +scheduler=cosine \
+  trainer.epochs=75 \
+  trainer.batch_size=64 \
+  trainer.learning_rate=1e-4 \
+```
+#### NCTCRC
+```bash
+python run.py \
+  +dataset=nctcrc \
+  +trainer=marvel \
+  +optimizer=adam \
+  +scheduler=cosine \
+  trainer.epochs=75 \
+  trainer.batch_size=64 \
+  trainer.learning_rate=1e-4 \
+```

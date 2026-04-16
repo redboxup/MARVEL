@@ -93,6 +93,8 @@ if __name__ == "__main__":
         exts = ".jpg"
     elif args.dataset == "rfmid":
         exts = ".png"
+    elif args.dataset == "nctcrc":
+        exts = ".tif"
     elif args.dataset == "nearood":
         exts = [".png", ".jpg", ".jpeg"]
     else:
@@ -120,9 +122,8 @@ if __name__ == "__main__":
             )
         )
 
-    if args.dataset not in [
-        "nearood"
-    ]:  # no need to copy csv labels for ood-datasets
+    if args.dataset != "nearood":
+        # no need to copy csv labels for ood-datasets
         for file in raw_data_dir.rglob("*.csv"):
             shutil.copy2(file, out_data_dir / file.name)
 
